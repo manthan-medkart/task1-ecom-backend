@@ -5,10 +5,7 @@ import com.task.e_commerce.dtos.UserResponseDto;
 import com.task.e_commerce.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(path = "/registration")
@@ -20,14 +17,18 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping(path = "/create")
+    @PostMapping(path = "/signUp")
     public ResponseEntity<UserResponseDto> createNewUser(@RequestBody UserRequestDto user){
 
         UserResponseDto savedUser = userService.createNewUser(user);
 
         savedUser.setStatus("Created");
 
+
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
+//    @GetMapping(path = "/signIn")
+//    public ResponseEntity<>
+
 
 }

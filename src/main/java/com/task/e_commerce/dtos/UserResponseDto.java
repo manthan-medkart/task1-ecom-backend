@@ -10,5 +10,6 @@ public class UserResponseDto {
 
     private String email;
     private String status;
+    private Long totalprice;
 
 }

@@ -5,13 +5,17 @@ import com.task.e_commerce.dtos.UserResponseDto;
 import com.task.e_commerce.entities.UserEntity;
 import com.task.e_commerce.exceptions.ResourceNotFoundException;
 import com.task.e_commerce.repositories.UserRepository;
+import org.apache.catalina.User;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
-public class UserService {
+public class UserService  {
 
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
@@ -39,4 +43,5 @@ public class UserService {
     public Boolean isUserExists(String email){
         return userRepository.existsByEmail(email);
     }
+
 }
