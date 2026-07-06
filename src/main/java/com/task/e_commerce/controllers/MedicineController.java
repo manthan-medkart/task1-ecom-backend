@@ -30,6 +30,7 @@ public class MedicineController {
 
     @GetMapping(path = "/authenticatedView/{medId}")
     public ResponseEntity<Optional<MedicineDto>> getMedicineById(@PathVariable (name = "medId") Long id){
+        System.out.println("_<----controller entered");
         return new ResponseEntity<>(medicineService.getMedicineById(id), HttpStatus.FOUND);
     }
 
