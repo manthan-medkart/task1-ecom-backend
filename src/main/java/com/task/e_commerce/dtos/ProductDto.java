@@ -7,15 +7,14 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MedicineDto {
+public class ProductDto {
 
     private Long id;
     private String name;
-    private String composition;
-    private Long mrp;
-    private Long salesRate;
-    private Long totalStrip;
-    private Long medicinePerStrip;
+    private String description;
+    private Long price;
+    private String category;
+    private Long stockQuantity;
     private String imageUrl;
 
 

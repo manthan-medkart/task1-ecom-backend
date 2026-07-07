@@ -6,11 +6,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "medicine")
+@Table(name = "product")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MedicineEntity {
+public class ProductEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +24,12 @@ public class MedicineEntity {
     private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @OneToOne(mappedBy = "productEntity")
+    private OrderItemsEntity orderItems;
+
+    @OneToOne(mappedBy = "productEntity")
+    private CartItemEntity cartItem;
 
 
 }

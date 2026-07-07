@@ -1,12 +1,11 @@
 package com.task.e_commerce.services;
 
-import com.task.e_commerce.dtos.UserRequestDto;
-import com.task.e_commerce.dtos.UserResponseDto;
+import com.task.e_commerce.dtos.SignupDto;
+import com.task.e_commerce.dtos.SignupResponseDto;
 import com.task.e_commerce.entities.UserEntity;
 import com.task.e_commerce.entities.enums.Roles;
 import com.task.e_commerce.exceptions.ResourceNotFoundException;
 import com.task.e_commerce.repositories.UserRepository;
-import org.apache.catalina.User;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -36,7 +34,7 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(username).orElseThrow(() -> new ResourceNotFoundException("User with email : "+username +"not found" ));
     }
 
-    public UserResponseDto createNewUser(UserRequestDto user) {
+    public SignupResponseDto createNewUser(SignupDto user) {
 
         if(isUserExists(user.getEmail())) throw new ResourceNotFoundException("User already exists.");
 
@@ -48,7 +46,7 @@ public class UserService implements UserDetailsService {
 
         UserEntity savedEntity = userRepository.save(toBeSavedEntity);
 
-        return modelMapper.map(savedEntity, UserResponseDto.class);
+        return modelMapper.map(savedEntity, SignupResponseDto.class);
 
     }
 

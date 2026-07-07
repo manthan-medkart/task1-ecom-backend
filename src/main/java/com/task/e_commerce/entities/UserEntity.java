@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
-@Table
+@Table(name = "users")
 @Builder
 @Getter
 @Setter
@@ -29,12 +29,10 @@ public class UserEntity implements UserDetails {
     private String email;
     private String password;
 
-    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(value = EnumType.STRING)
     private Set<Roles> roles;
     private Long phoneNo;
     private String gender;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -57,4 +55,10 @@ public class UserEntity implements UserDetails {
     public String getUsername() {
         return this.email;
     }
+
+    @OneToOne(mappedBy = "userEntity")
+    private CartEntity cartEntity;
+
+    @OneToMany(mappedBy = "userEntity")
+    private List<OrderEntity> orderEntities;
 }

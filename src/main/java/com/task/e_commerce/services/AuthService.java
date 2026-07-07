@@ -2,7 +2,9 @@ package com.task.e_commerce.services;
 
 import com.task.e_commerce.dtos.LoginDto;
 import com.task.e_commerce.dtos.LoginResponseDto;
+import com.task.e_commerce.dtos.components.UserDto;
 import com.task.e_commerce.entities.UserEntity;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,12 +13,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    private AuthenticationManager authenticationManager;
-    private JwtService jwtService;
+    private final ModelMapper modelMapper;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService){
+    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService, ModelMapper modelMapper){
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.modelMapper = modelMapper;
     }
 
     public LoginResponseDto login(LoginDto loginDto){
@@ -35,7 +39,7 @@ public class AuthService {
 
         System.out.println("4. JWT token generated");
 
-        return new LoginResponseDto(user.getId(), accessToken);
+        return new LoginResponseDto(accessToken, modelMapper.map(user, UserDto.class));
 
 
 

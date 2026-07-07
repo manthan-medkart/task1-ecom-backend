@@ -13,7 +13,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<?>> handleResourceNotFound(ResourceNotFoundException exception){
+    public ResponseEntity<ApiError> handleResourceNotFound(ResourceNotFoundException exception){
 
         ApiError apiError = ApiError.builder()
                 .message(exception.getMessage())
@@ -25,8 +25,9 @@ public class GlobalExceptionHandler {
     }
 
 
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> handleAllException(@NonNull Exception exception){
+    public ResponseEntity<ApiError> handleAllException(@NonNull Exception exception){
 
         ApiError apiError = ApiError.builder()
                 .message(exception.getLocalizedMessage())
@@ -37,11 +38,8 @@ public class GlobalExceptionHandler {
     }
 
 
-
-
-
-    public ResponseEntity<ApiResponse<?>> createErrorResponseEntity(ApiError apiError){
-        return new ResponseEntity<>(new ApiResponse<>(apiError), apiError.getHttpStatus());
+    public ResponseEntity<ApiError> createErrorResponseEntity(ApiError apiError){
+        return new ResponseEntity<>(apiError, apiError.getHttpStatus());
     }
 
 

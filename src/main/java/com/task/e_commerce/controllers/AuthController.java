@@ -2,31 +2,32 @@ package com.task.e_commerce.controllers;
 
 import com.task.e_commerce.dtos.LoginDto;
 import com.task.e_commerce.dtos.LoginResponseDto;
-import com.task.e_commerce.dtos.UserRequestDto;
-import com.task.e_commerce.dtos.UserResponseDto;
+import com.task.e_commerce.dtos.SignupDto;
+import com.task.e_commerce.dtos.SignupResponseDto;
 import com.task.e_commerce.services.AuthService;
 import com.task.e_commerce.services.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(path = "/registration")
-public class UserController {
+@RequestMapping(path = "/api/auth")
+public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
 
 
-    public UserController(UserService userService, AuthService authService) {
+    public AuthController(UserService userService, AuthService authService) {
         this.userService = userService;
         this.authService = authService;
     }
 
-    @PostMapping(path = "/signUp")
-    public ResponseEntity<UserResponseDto> createNewUser(@RequestBody UserRequestDto user){
+    @PostMapping(path = "/signup")
+    public ResponseEntity<SignupResponseDto> createNewUser(@RequestBody SignupDto user){
 
-        UserResponseDto savedUser = userService.createNewUser(user);
+        SignupResponseDto savedUser = userService.createNewUser(user);
 
         savedUser.setStatus("Created");
 
@@ -36,7 +37,7 @@ public class UserController {
 
 
     @PostMapping(path = "/login")
-    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto){
+    public ResponseEntity<LoginResponseDto> login(@RequestBody @Valid LoginDto loginDto){
 
         System.out.println("<-----Entry to Controller----->");
         LoginResponseDto loginResponseDto = authService.login(loginDto);

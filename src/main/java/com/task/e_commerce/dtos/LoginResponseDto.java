@@ -1,5 +1,6 @@
 package com.task.e_commerce.dtos;
 
+import com.task.e_commerce.dtos.components.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginResponseDto {
 
-    private Long id;
     private String accessToken;
+    private UserDto userDto;
 
 }
