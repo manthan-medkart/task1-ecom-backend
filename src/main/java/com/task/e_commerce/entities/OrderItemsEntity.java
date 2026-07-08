@@ -18,7 +18,7 @@ public class OrderItemsEntity {
     private Long quantity;
     private Long price;
 
-    @OneToOne
+    @ManyToOne
     private ProductEntity productEntity;
 
     @ManyToOne

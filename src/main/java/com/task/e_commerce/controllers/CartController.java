@@ -6,6 +6,8 @@ import com.task.e_commerce.dtos.UpdateCartDto;
 import com.task.e_commerce.entities.UserEntity;
 import com.task.e_commerce.services.CartService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,32 +22,33 @@ public class CartController {
     }
 
     @GetMapping
-    public CartDto getCart() {
+    public ResponseEntity<CartDto> getCart() {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cartService.getCart(user.getId());
+        return new ResponseEntity<>(cartService.getCart(user.getId()), HttpStatus.OK);
     }
 
     @PostMapping("/add")
-    public CartDto addProductToCart(@RequestBody @Valid AddToCartDto addToCartDto) {
+    public ResponseEntity<CartDto> addProductToCart(@RequestBody @Valid AddToCartDto addToCartDto) {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cartService.addProductToCart(user.getId(), addToCartDto);
+        return new ResponseEntity<>(cartService.addProductToCart(user.getId(), addToCartDto), HttpStatus.OK);
     }
 
     @PutMapping("/update")
-    public CartDto updateProductInCart(@RequestBody @Valid UpdateCartDto updateCartDto) {
+    public ResponseEntity<CartDto> updateProductInCart(@RequestBody @Valid UpdateCartDto updateCartDto) {
+
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cartService.updateProductInCart(user.getId(), updateCartDto);
+        return new ResponseEntity<>(cartService.updateProductInCart(user.getId(), updateCartDto), HttpStatus.OK) ;
     }
 
     @DeleteMapping("/remove/{productId}")
-    public CartDto removeProductFromCart(@PathVariable Long productId) {
+    public ResponseEntity<CartDto> removeProductFromCart(@PathVariable Long productId) {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cartService.removeProductFromCart(user.getId(), productId);
+        return new ResponseEntity<>(cartService.removeProductFromCart(user.getId(), productId), HttpStatus.OK);
     }
 
     @PostMapping("/clear")
-    public CartDto clearCart() {
+    public ResponseEntity<CartDto> clearCart() {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cartService.clearCart(user.getId());
+        return new ResponseEntity<>(cartService.clearCart(user.getId()), HttpStatus.OK);
     }
 }

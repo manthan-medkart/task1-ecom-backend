@@ -26,11 +26,6 @@ public class ProductEntity {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "productEntity")
-    private OrderItemsEntity orderItems;
-
-    @OneToOne(mappedBy = "productEntity")
-    private CartItemEntity cartItem;
 
 
 }

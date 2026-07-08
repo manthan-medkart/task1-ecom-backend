@@ -1,8 +1,15 @@
 package com.task.e_commerce.services;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+
+import com.task.e_commerce.dtos.AddToCartDto;
 import com.task.e_commerce.dtos.CartDto;
 import com.task.e_commerce.dtos.CartItemsDto;
-import com.task.e_commerce.dtos.AddToCartDto;
 import com.task.e_commerce.dtos.UpdateCartDto;
 import com.task.e_commerce.entities.CartEntity;
 import com.task.e_commerce.entities.CartItemEntity;
@@ -13,12 +20,6 @@ import com.task.e_commerce.repositories.CartItemRepository;
 import com.task.e_commerce.repositories.CartRepository;
 import com.task.e_commerce.repositories.ProductRepository;
 import com.task.e_commerce.repositories.UserRepository;
-import org.modelmapper.ModelMapper;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CartService {
@@ -44,16 +45,17 @@ public class CartService {
 
         //if cart is not found, it will create a new active cart.
         if (cartEntity == null) {
-
-            cartEntity = new CartEntity();
+            System.out.println("cart doesnt exist");
 
             UserEntity user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " does not exist."));
-            cartEntity.setUserEntity(user);
-            cartEntity.setActive(true);
-            cartEntity.setCreatedAt(LocalDateTime.now());
-            cartEntity.setUpdatedAt(LocalDateTime.now());
-            cartEntity = cartRepository.save(cartEntity);
+
+            cartEntity = cartRepository.save(CartEntity.builder()
+                    .userEntity(user)
+                    .active(true)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build());
         }
         return cartEntity;
     }
@@ -67,16 +69,16 @@ public class CartService {
 
         Long totalPrice = cartItems.stream()
                 //Add totalPrice of the cart ( includes all items )
-                .mapToLong(cartItem ->
-                        cartItem.getPrice() * cartItem.getQuantity()
+                .mapToLong(cartItem
+                        -> cartItem.getPrice() * cartItem.getQuantity()
                 )
                 .sum();
 
         return new CartDto(cartItems
                 .stream()
                 .map(cartItem -> modelMapper.map(cartItem, CartItemsDto.class))
-                .toList()
-                , totalPrice);
+                .toList(),
+                 totalPrice);
 
     }
 
@@ -98,8 +100,11 @@ public class CartService {
 
         //Fetch available quantity from product table.
         long availableStock;
-        if(product.getTotalStrip() != null) availableStock= product.getTotalStrip();
-        else availableStock = 0L;
+        if (product.getTotalStrip() != null) {
+            availableStock = product.getTotalStrip(); 
+        }else {
+            availableStock = 0L;
+        }
 
         if (targetQuantity > availableStock) {
             throw new IllegalArgumentException("Cannot add product. Requested quantity (" + targetQuantity + ") exceeds available stock (" + availableStock + ").");
@@ -110,8 +115,7 @@ public class CartService {
         if (existingCartItemOpt.isPresent()) {
             cartItemEntity = existingCartItemOpt.get();
             cartItemEntity.setQuantity(targetQuantity);
-        }
-        //create new item in cartItems ---> set cartEntity and productEntity and quantity
+        } //create new item in cartItems ---> set cartEntity and productEntity and quantity
         else {
             cartItemEntity = new CartItemEntity();
             cartItemEntity.setCartEntity(cartEntity);
@@ -173,7 +177,6 @@ public class CartService {
 
         CartItemEntity cartItemEntity = cartItemRepository.findByCartEntityIdAndProductEntityId(cartEntity.getId(), productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id: " + productId + " is not in your cart."));
-
 
         cartItemRepository.delete(cartItemEntity);
 

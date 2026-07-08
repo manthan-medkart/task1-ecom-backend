@@ -56,8 +56,8 @@ public class UserEntity implements UserDetails {
         return this.email;
     }
 
-    @OneToOne(mappedBy = "userEntity")
-    private CartEntity cartEntity;
+    @OneToMany(mappedBy = "userEntity")
+    private List<CartEntity> cartEntity;
 
     @OneToMany(mappedBy = "userEntity")
     private List<OrderEntity> orderEntities;

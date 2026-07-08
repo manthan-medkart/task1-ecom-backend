@@ -3,6 +3,7 @@ package com.task.e_commerce.advice;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -28,6 +29,6 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        return new ApiData<>(HttpStatus.OK, "Request completed successfully", body);
+        return new ApiData<>(HttpStatusCode.valueOf(200), "Request completed successfully", body);
     }
 }

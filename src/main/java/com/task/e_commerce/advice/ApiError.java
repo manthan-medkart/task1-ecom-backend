@@ -1,7 +1,7 @@
 package com.task.e_commerce.advice;
 
 import lombok.*;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ApiError {
 
-    private HttpStatus httpStatus;
+    private HttpStatusCode httpStatusCode;
     private String message;
     private Object error;
     private LocalDateTime timestamp;

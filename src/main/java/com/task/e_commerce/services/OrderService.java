@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -27,11 +28,11 @@ public class OrderService {
     private final ModelMapper modelMapper;
 
     public OrderService(OrderRepository orderRepository,
-                        OrderItemsRepository orderItemsRepository,
-                        CartRepository cartRepository,
-                        CartItemRepository cartItemRepository,
-                        UserRepository userRepository,
-                        ProductRepository productRepository, ModelMapper modelMapper) {
+            OrderItemsRepository orderItemsRepository,
+            CartRepository cartRepository,
+            CartItemRepository cartItemRepository,
+            UserRepository userRepository,
+            ProductRepository productRepository, ModelMapper modelMapper) {
         this.orderRepository = orderRepository;
         this.orderItemsRepository = orderItemsRepository;
         this.cartRepository = cartRepository;
@@ -57,7 +58,6 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot place order: Cart is empty.");
         }
 
-
         //This for loop basically check for the available stock of that particular product
         for (CartItemEntity cartItem : cartItems) {
 
@@ -65,12 +65,15 @@ public class OrderService {
 
             //Fetch stock from the database
             long availableStock;
-            if(product.getTotalStrip() != null) availableStock = product.getTotalStrip();
-            else availableStock = 0L;
+            if (product.getTotalStrip() != null) {
+                availableStock = product.getTotalStrip(); 
+            }else {
+                availableStock = 0L;
+            }
 
             //If stock is not available ---> throw exception and message
             if (cartItem.getQuantity() > availableStock) {
-                throw new IllegalArgumentException("Insufficient stock for product: " + product.getName() 
+                throw new IllegalArgumentException("Insufficient stock for product: " + product.getName()
                         + ". Available: " + availableStock + ", Requested: " + cartItem.getQuantity());
             }
         }
@@ -78,7 +81,6 @@ public class OrderService {
         double totalPrice = cartItems.stream()
                 .mapToDouble(cartItem -> cartItem.getProductEntity().getSalesRate() * cartItem.getQuantity())
                 .sum();
-
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " does not exist."));
@@ -94,17 +96,17 @@ public class OrderService {
 
         orderRepository.save(orderEntity);
 
-
-
         //Enter all the items that has been ordered into OrderItems
         for (CartItemEntity cartItem : cartItems) {
             ProductEntity product = cartItem.getProductEntity();
-            OrderItemsEntity orderItem = modelMapper.map(cartItem, OrderItemsEntity.class);
-            orderItem.setOrderEntity(orderEntity);
-            orderItem.setPrice(product.getSalesRate());
-            
-            orderItemsRepository.save(orderItem);
+            OrderItemsEntity orderItem = OrderItemsEntity.builder()
+                    .quantity(cartItem.getQuantity())
+                    .price(cartItem.getPrice())
+                    .productEntity(product)
+                    .orderEntity(orderEntity)
+                    .build();
 
+            orderItemsRepository.save(orderItem);
 
             product.setTotalStrip(product.getTotalStrip() - cartItem.getQuantity());
             productRepository.save(product);
@@ -131,6 +133,23 @@ public class OrderService {
                 .map(orderEntity -> modelMapper.map(orderEntity, OrderResponseDto.class))
                 .toList();
 
+    }
 
+    public List<OrderItemResponseDto> getOrderDetails(Long orderId) {
+
+        List<OrderItemsEntity> orderItems = orderItemsRepository.findAllByOrderEntityId(orderId);
+
+        List<OrderItemResponseDto> orderItemResponseDtos = new ArrayList<>();
+        for(OrderItemsEntity orderItem : orderItems){
+            OrderItemResponseDto orderItemResponseDto = OrderItemResponseDto.builder()
+                    .id(orderItem.getId())
+                    .quantity(orderItem.getQuantity())
+                    .price(orderItem.getPrice())
+                    .productId(orderItem.getProductEntity().getId())
+                    .productName(orderItem.getProductEntity().getName())
+                    .build();
+            orderItemResponseDtos.add(orderItemResponseDto);
+        }
+        return orderItemResponseDtos;
     }
 }

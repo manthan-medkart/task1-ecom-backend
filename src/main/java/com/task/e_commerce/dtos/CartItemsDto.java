@@ -8,5 +8,6 @@ public class CartItemsDto {
     private Long id;
     private String product;
     private Long quantity;
+    private Long price;
 
 }

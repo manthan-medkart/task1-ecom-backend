@@ -1,10 +1,13 @@
 package com.task.e_commerce.controllers;
 
+import com.task.e_commerce.dtos.OrderItemResponseDto;
 import com.task.e_commerce.dtos.OrderRequestDto;
 import com.task.e_commerce.dtos.OrderResponseDto;
 import com.task.e_commerce.entities.UserEntity;
 import com.task.e_commerce.services.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,14 +24,20 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderResponseDto placeOrder(@RequestBody @Valid OrderRequestDto orderRequestDto) {
+    public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody @Valid OrderRequestDto orderRequestDto) {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return orderService.placeOrder(user.getId(), orderRequestDto);
+        return new ResponseEntity<>(orderService.placeOrder(user.getId(), orderRequestDto), HttpStatus.OK);
     }
 
     @GetMapping
-    public List<OrderResponseDto> getUserOrders() {
+    public ResponseEntity<List<OrderResponseDto>> getUserOrders() {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return orderService.getUserOrders(user.getId());
+        return new ResponseEntity<>(orderService.getUserOrders(user.getId()), HttpStatus.OK);
+    }
+
+
+    @GetMapping("/details/{orderId}")
+    public ResponseEntity<List<OrderItemResponseDto>> getOrderDetails(@PathVariable Long orderId){
+        return new ResponseEntity<>(orderService.getOrderDetails(orderId), HttpStatus.OK);
     }
 }

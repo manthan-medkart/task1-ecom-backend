@@ -23,7 +23,7 @@ public class CartEntity {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @OneToOne
+    @ManyToOne
     private UserEntity userEntity;
 
     @OneToMany(mappedBy = "cartEntity")
