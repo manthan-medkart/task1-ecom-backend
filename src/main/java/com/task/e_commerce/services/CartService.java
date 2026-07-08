@@ -38,9 +38,15 @@ public class CartService {
     }
 
     private CartEntity getOrCreateActiveCart(Long userId) {
+        //Fetch Active cart of particular user.
         CartEntity cartEntity = cartRepository.findByUserEntityIdAndActive(userId, true);
+        //if cart found, return it...
+
+        //if cart is not found, it will create a new active cart.
         if (cartEntity == null) {
+
             cartEntity = new CartEntity();
+
             UserEntity user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " does not exist."));
             cartEntity.setUserEntity(user);
@@ -54,14 +60,15 @@ public class CartService {
 
     public CartDto getCart(Long id) {
 
+        //To get cart items, need cart first ---> you will fetch active cart first
         CartEntity cartEntity = getOrCreateActiveCart(id);
 
         List<CartItemEntity> cartItems = cartItemRepository.findAllByCartEntityId(cartEntity.getId());
 
         Long totalPrice = cartItems.stream()
+                //Add totalPrice of the cart ( includes all items )
                 .mapToLong(cartItem ->
-                        cartItem.getProductEntity().getSalesRate()
-                                * cartItem.getQuantity()
+                        cartItem.getPrice() * cartItem.getQuantity()
                 )
                 .sum();
 
@@ -74,27 +81,38 @@ public class CartService {
     }
 
     public CartDto addProductToCart(Long userId, AddToCartDto addToCartDto) {
+
+        //To add product into cart, get active cart
         CartEntity cartEntity = getOrCreateActiveCart(userId);
 
         ProductEntity product = productRepository.findById(addToCartDto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id: " + addToCartDto.getProductId() + " does not exist."));
 
+        //Check if their any already existence of product in cart
         Optional<CartItemEntity> existingCartItemOpt = cartItemRepository.findByCartEntityIdAndProductEntityId(cartEntity.getId(), product.getId());
 
-        long currentQuantity = existingCartItemOpt.map(CartItemEntity::getQuantity).orElse(0L);
+        //Cart--->cartItem || get quantity of that Item
+        long currentQuantity = existingCartItemOpt.map(cartItem -> cartItem.getQuantity()).orElse(0L);
+        //Calculate final quantity, to keep in cart
         long targetQuantity = currentQuantity + addToCartDto.getQuantity();
 
-        // Enforce Stock Check
-        long availableStock = product.getTotalStrip() != null ? product.getTotalStrip() : 0L;
+        //Fetch available quantity from product table.
+        long availableStock;
+        if(product.getTotalStrip() != null) availableStock= product.getTotalStrip();
+        else availableStock = 0L;
+
         if (targetQuantity > availableStock) {
             throw new IllegalArgumentException("Cannot add product. Requested quantity (" + targetQuantity + ") exceeds available stock (" + availableStock + ").");
         }
 
         CartItemEntity cartItemEntity;
+        //if there is any existing item in the cart --> update quantity
         if (existingCartItemOpt.isPresent()) {
             cartItemEntity = existingCartItemOpt.get();
             cartItemEntity.setQuantity(targetQuantity);
-        } else {
+        }
+        //create new item in cartItems ---> set cartEntity and productEntity and quantity
+        else {
             cartItemEntity = new CartItemEntity();
             cartItemEntity.setCartEntity(cartEntity);
             cartItemEntity.setProductEntity(product);
@@ -120,13 +138,11 @@ public class CartService {
 
         long targetQuantity = updateCartDto.getQuantity();
 
-        // If target quantity <= 0, remove product from cart
         if (targetQuantity <= 0) {
             if (existingCartItemOpt.isPresent()) {
                 cartItemRepository.delete(existingCartItemOpt.get());
             }
         } else {
-            // Enforce Stock Check
             long availableStock = product.getTotalStrip() != null ? product.getTotalStrip() : 0L;
             if (targetQuantity > availableStock) {
                 throw new IllegalArgumentException("Cannot update quantity. Requested quantity (" + targetQuantity + ") exceeds available stock (" + availableStock + ").");
@@ -157,6 +173,7 @@ public class CartService {
 
         CartItemEntity cartItemEntity = cartItemRepository.findByCartEntityIdAndProductEntityId(cartEntity.getId(), productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id: " + productId + " is not in your cart."));
+
 
         cartItemRepository.delete(cartItemEntity);
 

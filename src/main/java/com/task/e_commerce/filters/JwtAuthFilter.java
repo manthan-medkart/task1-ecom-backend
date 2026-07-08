@@ -44,7 +44,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
-            // Safely extract the token by taking everything after "Bearer " prefix
             String token = requestTokenHeader.substring(7).trim();
 
             if (token.isEmpty()) {

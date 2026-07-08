@@ -15,5 +15,5 @@ public class OrderResponseDto {
     private LocalDateTime orderDate;
     private String shippingAddress;
     private String paymentMethod;
-    private List<OrderItemResponseDto> orderItems;
+
 }

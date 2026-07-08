@@ -1,10 +1,8 @@
 package com.task.e_commerce.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.validator.constraints.BitcoinAddress;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +13,7 @@ import java.util.List;
 @Setter
 @RequiredArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CartEntity {
 
     @Id

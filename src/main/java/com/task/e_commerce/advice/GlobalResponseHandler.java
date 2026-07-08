@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
@@ -27,18 +28,6 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        // Determine HTTP Status dynamically from the response
-        HttpStatus status = HttpStatus.OK;
-        if (response instanceof org.springframework.http.server.ServletServerHttpResponse servletResponse) {
-            int statusCode = servletResponse.getServletResponse().getStatus();
-            try {
-                status = HttpStatus.valueOf(statusCode);
-            } catch (IllegalArgumentException e) {
-                // Keep default OK if status code is non-standard
-            }
-        }
-
-        // Wrap success response in ApiData
-        return new ApiData<>(status, "Request completed successfully", body);
+        return new ApiData<>(HttpStatus.OK, "Request completed successfully", body);
     }
 }

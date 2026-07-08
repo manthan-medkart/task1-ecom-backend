@@ -1,10 +1,7 @@
 package com.task.e_commerce.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "order_items")
@@ -12,19 +9,19 @@ import lombok.Setter;
 @Setter
 @RequiredArgsConstructor
 @AllArgsConstructor
+@Builder
 public class OrderItemsEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    private OrderEntity orderEntity;
+    private Long quantity;
+    private Long price;
 
     @OneToOne
     private ProductEntity productEntity;
 
-    private Long quantity;
-    private Long price;
+    @ManyToOne
+    private OrderEntity orderEntity;
 
 }

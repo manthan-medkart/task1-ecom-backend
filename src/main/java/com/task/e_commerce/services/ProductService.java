@@ -26,15 +26,6 @@ public class ProductService {
         this.modelMapper = modelMapper;
     }
 
-    public List<ProductDto> getAllProducts() {
-
-        return productRepository.findAll()
-                .stream()
-                .map(productEntity -> modelMapper.map(productEntity, ProductDto.class))
-                .toList();
-
-    }
-
     public Page<ProductDto> getProducts(String search, String sort, int page, int size) {
         Sort sortingRule = Sort.unsorted();
         if ("PRICE_LOW_HIGH".equalsIgnoreCase(sort)) {

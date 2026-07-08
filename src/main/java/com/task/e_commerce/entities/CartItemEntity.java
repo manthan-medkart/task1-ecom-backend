@@ -1,10 +1,7 @@
 package com.task.e_commerce.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -14,6 +11,7 @@ import java.util.List;
 @Setter
 @RequiredArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CartItemEntity {
 
     @Id
