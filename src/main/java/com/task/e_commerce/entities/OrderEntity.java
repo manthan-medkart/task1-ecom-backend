@@ -24,6 +24,8 @@ public class OrderEntity {
     private OrderStatus orderStatus;
     private Double totalPrice;
     private LocalDateTime orderDate;
+    private String shippingAddress;
+    private String paymentMethod;
 
     @ManyToOne
     private UserEntity userEntity;

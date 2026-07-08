@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -33,17 +34,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
-            httpSecurity.
-                    authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/product/view", "/registration/**").permitAll()
-                            .requestMatchers("/product/authenticatedView/**").hasRole("USER")
-                            .anyRequest().authenticated()
-                    )
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+            httpSecurity
+                    .cors(Customizer.withDefaults())
                     .csrf(csrfConfig -> csrfConfig.disable())
                     .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                    .formLogin(Customizer.withDefaults());
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/api/auth/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/products").permitAll()
+                            .requestMatchers("/api/cart/**", "/api/orders/**").authenticated()
+                            .anyRequest().authenticated()
+                    )
+                    .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
 
             return httpSecurity.build();

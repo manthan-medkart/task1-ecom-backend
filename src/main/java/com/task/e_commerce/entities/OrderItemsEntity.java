@@ -24,4 +24,7 @@ public class OrderItemsEntity {
     @OneToOne
     private ProductEntity productEntity;
 
+    private Long quantity;
+    private Long price;
+
 }

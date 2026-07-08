@@ -1,7 +1,7 @@
 package com.task.e_commerce.dtos;
 
 import lombok.*;
-
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -11,12 +11,12 @@ public class ProductDto {
 
     private Long id;
     private String name;
-    private String description;
-    private Long price;
-    private String category;
-    private Long stockQuantity;
+    private String composition;
+    private Long mrp;
+    private Long salesRate;
+    private Long totalStrip;
+    private Long medicinePerStrip;
     private String imageUrl;
-
-
-
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

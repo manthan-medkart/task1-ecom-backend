@@ -2,19 +2,15 @@ package com.task.e_commerce.controllers;
 
 import com.task.e_commerce.dtos.ProductDto;
 import com.task.e_commerce.services.ProductService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/product")
-
+@RequestMapping("/api/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -24,15 +20,17 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductDto>> getAllMedicine(){
-        return new ResponseEntity<>(productService.getAllProducts(), HttpStatus.FOUND);
+    public ResponseEntity<Page<ProductDto>> getAllMedicine(
+            @RequestParam(value = "search", required = false, defaultValue = "") String search,
+            @RequestParam(value = "sort", required = false, defaultValue = "DEFAULT") String sort,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "6") int size) {
+        return new ResponseEntity<>(productService.getProducts(search, sort, page, size), HttpStatus.OK);
     }
 
-    @GetMapping(path = "{id}")
-    public ResponseEntity<Optional<ProductDto>> getMedicineById(@PathVariable (name = "medId") Long id){
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<Optional<ProductDto>> getMedicineById(@PathVariable Long id) {
         System.out.println("_<----controller entered");
-        return new ResponseEntity<>(productService.getMedicineById(id), HttpStatus.FOUND);
+        return new ResponseEntity<>(productService.getMedicineById(id), HttpStatus.OK);
     }
-
-
 }

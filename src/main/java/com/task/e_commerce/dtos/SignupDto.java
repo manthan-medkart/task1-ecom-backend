@@ -20,7 +20,7 @@ public class SignupDto {
     private String email;
 
     @NotBlank(message = "Please enter the password")
-    @Min(value = 8, message = "Password must contain minimum 8 character")
+    @Size(min = 8, message = "Password must contain minimum 8 characters")
     @Pattern(regexp = "^(?=.{8,})(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$", message = "Password must contain One UpperCase Letter, One LowerCase Letter, One Special character from @,#,$,%,^,&,+,=")
     private String password;
 

@@ -25,7 +25,7 @@ public class AuthController {
     }
 
     @PostMapping(path = "/signup")
-    public ResponseEntity<SignupResponseDto> createNewUser(@RequestBody SignupDto user){
+    public ResponseEntity<SignupResponseDto> createNewUser(@RequestBody @Valid SignupDto user){
 
         SignupResponseDto savedUser = userService.createNewUser(user);
 
