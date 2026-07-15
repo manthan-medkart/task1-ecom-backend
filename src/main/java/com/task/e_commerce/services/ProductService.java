@@ -53,4 +53,8 @@ public class ProductService {
     public Boolean isUserExists(Long id) {
         return productRepository.existsById(id);
     }
+
+    public ProductDto publishProductById(Long id, ProductDto productDto) {
+
+    }
 }
