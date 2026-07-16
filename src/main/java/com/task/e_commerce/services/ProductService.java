@@ -1,6 +1,7 @@
 package com.task.e_commerce.services;
 
 import com.task.e_commerce.dtos.ProductDto;
+import com.task.e_commerce.dtos.ProductPublishDto;
 import com.task.e_commerce.entities.ProductEntity;
 import com.task.e_commerce.exceptions.ResourceNotFoundException;
 import com.task.e_commerce.repositories.ProductRepository;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -56,13 +58,54 @@ public class ProductService {
         return productRepository.existsByProductCode(productCode);
     }
 
-    public ProductDto publishProductById(Long productCode, ProductDto productDto) {
-        if(!isProductExists(productCode)) {
-            ProductEntity toBeSavedEntity = productRepository.findByProductCode(modelMapper.map(productDto, ProductEntity.class));
-            return modelMapper.map(productRepository.save(toBeSavedEntity), ProductDto.class);
-        }
-        else{
-            return modelMapper.map(productRepository.save(modelMapper.map(productDto, ProductEntity.class)), ProductDto.class);
+    public ProductDto publishProductById(Long productCode, ProductPublishDto productPublishDto) {
+        productPublishDto.setProductCode(productCode);
+        if (!isProductExists(productCode)) {
+            System.out.println("----0----");
+            ProductEntity entity = ProductEntity.builder()
+                    .name(productPublishDto.getName())
+                    .productCode(productPublishDto.getProductCode())
+                    .composition(productPublishDto.getComposition())
+                    .mrp(productPublishDto.getMrp())
+                    .salesRate(productPublishDto.getSales_rate())
+                    .totalStrip(productPublishDto.getTotal_strip())
+                    .medicinePerStrip(productPublishDto.getMedicine_per_strip())
+                    .imageUrl(productPublishDto.getImage_url())
+                    .build();
+            entity.setCreatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(LocalDateTime.now());
+            System.out.println("------1-------");
+            return modelMapper.map(productRepository.save(entity), ProductDto.class);
+        } else {
+            System.out.println("------2-----");
+            ProductEntity existingEntity = productRepository.findByProductCode(productCode);
+            System.out.println(existingEntity);
+            System.out.println("------3-----");
+            ProductEntity entityToUpdate = ProductEntity.builder()
+                    .name(productPublishDto.getName())
+                    .productCode(existingEntity.getProductCode())
+                    .composition(productPublishDto.getComposition())
+                    .mrp(productPublishDto.getMrp())
+                    .salesRate(productPublishDto.getSales_rate())
+                    .totalStrip(productPublishDto.getTotal_strip())
+                    .medicinePerStrip(productPublishDto.getMedicine_per_strip())
+                    .imageUrl(productPublishDto.getImage_url())
+                    .build();
+            entityToUpdate.setId(existingEntity.getId());
+            if (existingEntity.getCreatedAt() != null) {
+                System.out.println("----4----");
+                entityToUpdate.setCreatedAt(existingEntity.getCreatedAt());
+            } else {
+                System.out.println("----5----");
+                entityToUpdate.setCreatedAt(LocalDateTime.now());
+            }
+            System.out.println("----6----");
+            entityToUpdate.setUpdatedAt(LocalDateTime.now());
+            System.out.println("----7----");
+            System.out.println(entityToUpdate);
+            ProductEntity savedEntity = productRepository.save(entityToUpdate);
+            System.out.println("----8----");
+            return modelMapper.map(savedEntity, ProductDto.class);
         }
     }
 }

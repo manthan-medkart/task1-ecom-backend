@@ -1,6 +1,7 @@
 package com.task.e_commerce.controllers;
 
 import com.task.e_commerce.dtos.ProductDto;
+import com.task.e_commerce.dtos.ProductPublishDto;
 import com.task.e_commerce.services.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -35,7 +36,7 @@ public class ProductController {
     }
 
     @PostMapping(path = "/publish/{productCode}")
-    public ResponseEntity<ProductDto> publishProductById(@RequestBody ProductDto productDto, @PathVariable Long productCode){
-        return new ResponseEntity<>(productService.publishProductById(productCode, productDto), HttpStatus.OK);
+    public ResponseEntity<ProductDto> publishProductById(@RequestBody ProductPublishDto productPublishDto, @PathVariable Long productCode){
+        return new ResponseEntity<>(productService.publishProductById(productCode, productPublishDto), HttpStatus.OK);
     }
 }
