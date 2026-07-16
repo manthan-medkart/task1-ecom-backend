@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class ProductDto {
 
     private Long id;
+    private Long productCode;
     private String name;
     private String composition;
     private Long mrp;

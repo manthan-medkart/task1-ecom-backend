@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,21 +39,30 @@ public class ProductService {
         return productsPage.map(productEntity -> modelMapper.map(productEntity, ProductDto.class));
     }
 
-    public Optional<ProductDto> getMedicineById(Long id) {
+    public Optional<ProductDto> getProductById(Long productCode) {
 
-        if (!isUserExists(id))
+        if (!isProductExists(productCode))
             throw new ResourceNotFoundException("No medicine found with this id");
 
-        Optional<ProductEntity> medicineEntity = productRepository.findById(id);
-        return Optional.of(modelMapper.map(medicineEntity, ProductDto.class));
+        return Optional.of(modelMapper
+                .map(productRepository
+                        .findById(productCode)
+                        , ProductDto.class
+                ));
 
     }
 
-    public Boolean isUserExists(Long id) {
-        return productRepository.existsById(id);
+    public Boolean isProductExists(Long productCode) {
+        return productRepository.existsByProductCode(productCode);
     }
 
-//    public ProductDto publishProductById(Long id, ProductDto productDto) {
-//
-//    }
+    public ProductDto publishProductById(Long productCode, ProductDto productDto) {
+        if(!isProductExists(productCode)) {
+            ProductEntity toBeSavedEntity = productRepository.findByProductCode(modelMapper.map(productDto, ProductEntity.class));
+            return modelMapper.map(productRepository.save(toBeSavedEntity), ProductDto.class);
+        }
+        else{
+            return modelMapper.map(productRepository.save(modelMapper.map(productDto, ProductEntity.class)), ProductDto.class);
+        }
+    }
 }

@@ -16,4 +16,7 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
            " LOWER(p.composition) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<ProductEntity> searchProducts(@Param("search") String search, Pageable pageable);
 
+    Boolean existsByProductCode(Long productCode);
+
+    ProductEntity findByProductCode(ProductEntity productEntity);
 }

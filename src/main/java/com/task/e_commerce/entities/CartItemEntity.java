@@ -25,6 +25,7 @@ public class CartItemEntity {
     private CartEntity cartEntity;
 
     @ManyToOne
+    @JoinColumn(name = "product_code", referencedColumnName = "product_code")
     private ProductEntity productEntity;
 
 }
