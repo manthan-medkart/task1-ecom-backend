@@ -10,10 +10,12 @@ import com.task.e_commerce.repositories.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -26,13 +28,14 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
+    private final RestClient restClient;
 
     public OrderService(OrderRepository orderRepository,
-            OrderItemsRepository orderItemsRepository,
-            CartRepository cartRepository,
-            CartItemRepository cartItemRepository,
-            UserRepository userRepository,
-            ProductRepository productRepository, ModelMapper modelMapper) {
+                        OrderItemsRepository orderItemsRepository,
+                        CartRepository cartRepository,
+                        CartItemRepository cartItemRepository,
+                        UserRepository userRepository,
+                        ProductRepository productRepository, ModelMapper modelMapper, RestClient restClient) {
         this.orderRepository = orderRepository;
         this.orderItemsRepository = orderItemsRepository;
         this.cartRepository = cartRepository;
@@ -40,6 +43,7 @@ public class OrderService {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.modelMapper = modelMapper;
+        this.restClient = restClient;
     }
 
     @Transactional
@@ -58,23 +62,17 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot place order: Cart is empty.");
         }
 
-        //This for loop basically check for the available stock of that particular product
+        // Check stock availability from WMS for each item before placing order
         for (CartItemEntity cartItem : cartItems) {
-
             ProductEntity product = cartItem.getProductEntity();
 
-            //Fetch stock from the database
-            long availableStock;
-            if (product.getTotalStrip() != null) {
-                availableStock = product.getTotalStrip(); 
-            }else {
-                availableStock = 0L;
-            }
+            // Fetch stock from WMS (single source of truth)
+            int wmsStock = fetchStockFromWms(product.getProductCode());
 
-            //If stock is not available ---> throw exception and message
-            if (cartItem.getQuantity() > availableStock) {
+            // If stock is not available ---> throw exception and message
+            if (cartItem.getQuantity() > wmsStock) {
                 throw new IllegalArgumentException("Insufficient stock for product: " + product.getName()
-                        + ". Available: " + availableStock + ", Requested: " + cartItem.getQuantity());
+                        + ". Available: " + wmsStock + ", Requested: " + cartItem.getQuantity());
             }
         }
 
@@ -97,6 +95,7 @@ public class OrderService {
         orderRepository.save(orderEntity);
 
         //Enter all the items that has been ordered into OrderItems
+        List<OrderItemsEntity> savedOrderItems = new ArrayList<>();
         for (CartItemEntity cartItem : cartItems) {
             ProductEntity product = cartItem.getProductEntity();
             OrderItemsEntity orderItem = OrderItemsEntity.builder()
@@ -107,18 +106,41 @@ public class OrderService {
                     .build();
 
             orderItemsRepository.save(orderItem);
+            savedOrderItems.add(orderItem);
 
-            product.setTotalStrip(product.getTotalStrip() - cartItem.getQuantity());
-            productRepository.save(product);
-
+            // Deduct stock from WMS (single source of truth) + creates stock log
+            deductStockFromWms(product.getProductCode(), cartItem.getQuantity(),
+                    "Order placed: " + orderEntity.getId());
         }
+        orderEntity.setOrderItems(savedOrderItems);
 
         //Deactivate the cart
         cartEntity.setActive(false);
         cartEntity.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cartEntity);
 
-        return modelMapper.map(orderEntity, OrderResponseDto.class);
+        // Prepare WMS payload to create sales order
+        Map<String, Object> wmsPayload = Map.of(
+            "ecommerce_order_id", orderEntity.getId().toString(),
+            "customer_name", user.getName(),
+            "customer_email", user.getEmail(),
+            "items", cartItems.stream().map(item -> Map.of(
+                "product_code", item.getProductEntity().getProductCode(),
+                "quantity", item.getQuantity()
+            )).toList()
+        );
+
+        try {
+            restClient.post()
+                    .uri("/api/sales-order/create")
+                    .body(wmsPayload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to register order in WMS: " + e.getMessage(), e);
+        }
+
+        return mapToOrderResponseDto(orderEntity);
 
     }
 
@@ -130,9 +152,50 @@ public class OrderService {
 
         return orders
                 .stream()
-                .map(orderEntity -> modelMapper.map(orderEntity, OrderResponseDto.class))
+                .map(this::mapToOrderResponseDto)
                 .toList();
 
+    }
+
+    @Transactional
+    public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus status) {
+        OrderEntity orderEntity = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id: " + orderId + " does not exist."));
+        orderEntity.setOrderStatus(status);
+        orderRepository.save(orderEntity);
+        return mapToOrderResponseDto(orderEntity);
+    }
+
+    private OrderResponseDto mapToOrderResponseDto(OrderEntity orderEntity) {
+        OrderResponseDto dto = new OrderResponseDto();
+        dto.setId(orderEntity.getId());
+        
+        OrderStatus status = orderEntity.getOrderStatus();
+        if (status == OrderStatus.CHECKING_AVAILABILITY || status == OrderStatus.ACCEPTED) {
+            dto.setOrderStatus(OrderStatus.PENDING);
+        } else {
+            dto.setOrderStatus(status);
+        }
+        
+        dto.setTotalPrice(orderEntity.getTotalPrice());
+        dto.setOrderDate(orderEntity.getOrderDate());
+        dto.setShippingAddress(orderEntity.getShippingAddress());
+        dto.setPaymentMethod(orderEntity.getPaymentMethod());
+
+        List<OrderItemResponseDto> items = new ArrayList<>();
+        if (orderEntity.getOrderItems() != null) {
+            for (OrderItemsEntity item : orderEntity.getOrderItems()) {
+                items.add(OrderItemResponseDto.builder()
+                        .id(item.getId())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .productId(item.getProductEntity().getId())
+                        .productName(item.getProductEntity().getName())
+                        .build());
+            }
+        }
+        dto.setItems(items);
+        return dto;
     }
 
     public List<OrderItemResponseDto> getOrderDetails(Long orderId) {
@@ -151,5 +214,60 @@ public class OrderService {
             orderItemResponseDtos.add(orderItemResponseDto);
         }
         return orderItemResponseDtos;
+    }
+
+    /**
+     * Fetch current stock quantity from WMS for a given product.
+     * WMS is the single source of truth for stock.
+     *
+     * @param productCode the product code
+     * @return the current stock quantity
+     */
+    private int fetchStockFromWms(Long productCode) {
+        try {
+            Map response = restClient.get()
+                    .uri("/api/stock/" + productCode)
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                Map data = (Map) response.get("data");
+                if (data != null && data.containsKey("stockQuantity")) {
+                    return ((Number) data.get("stockQuantity")).intValue();
+                }
+            }
+            return 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch stock from WMS for product: " + productCode
+                    + ". Error: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Deduct stock from WMS for a given product.
+     * This also creates a stock log in WMS.
+     *
+     * @param productCode the product code
+     * @param quantity the quantity to deduct
+     * @param description reason for deduction
+     */
+    private void deductStockFromWms(Long productCode, Long quantity, String description) {
+        try {
+            Map<String, Object> payload = Map.of(
+                "quantity", quantity,
+                "description", description,
+                "source", "order_placed",
+                "updated_by", "ecommerce"
+            );
+
+            restClient.post()
+                    .uri("/api/stock/" + productCode + "/deduct")
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deduct stock in WMS for product: " + productCode
+                    + ". Error: " + e.getMessage(), e);
+        }
     }
 }

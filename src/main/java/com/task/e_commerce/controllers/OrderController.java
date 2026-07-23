@@ -4,6 +4,7 @@ import com.task.e_commerce.dtos.OrderItemResponseDto;
 import com.task.e_commerce.dtos.OrderRequestDto;
 import com.task.e_commerce.dtos.OrderResponseDto;
 import com.task.e_commerce.entities.UserEntity;
+import com.task.e_commerce.entities.enums.OrderStatus;
 import com.task.e_commerce.services.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,5 +40,10 @@ public class OrderController {
     @GetMapping("/details/{orderId}")
     public ResponseEntity<List<OrderItemResponseDto>> getOrderDetails(@PathVariable Long orderId){
         return new ResponseEntity<>(orderService.getOrderDetails(orderId), HttpStatus.OK);
+    }
+
+    @PostMapping("/update-status/{orderId}")
+    public ResponseEntity<OrderResponseDto> updateOrderStatus(@PathVariable Long orderId, @RequestParam OrderStatus status) {
+        return new ResponseEntity<>(orderService.updateOrderStatus(orderId, status), HttpStatus.OK);
     }
 }

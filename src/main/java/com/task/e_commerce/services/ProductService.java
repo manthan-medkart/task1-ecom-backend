@@ -12,8 +12,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,10 +23,13 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
+    private final RestClient restClient;
 
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ModelMapper modelMapper) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository,
+                          ModelMapper modelMapper, RestClient restClient) {
         this.productRepository = productRepository;
         this.modelMapper = modelMapper;
+        this.restClient = restClient;
     }
 
     public Page<ProductDto> getProducts(String search, String sort, int page, int size) {
@@ -38,20 +43,23 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size, sortingRule);
         Page<ProductEntity> productsPage = productRepository.searchProducts(search, pageable);
 
-        return productsPage.map(productEntity -> modelMapper.map(productEntity, ProductDto.class));
+        return productsPage.map(productEntity -> {
+            ProductDto dto = modelMapper.map(productEntity, ProductDto.class);
+            // Fetch stock from WMS (single source of truth)
+            dto.setTotalStrip(fetchStockFromWms(productEntity.getProductCode()));
+            return dto;
+        });
     }
 
-    public Optional<ProductDto> getProductById(Long productCode) {
+    public Optional<ProductDto> getProductById(Long id) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No medicine found with this id"));
 
-        if (!isProductExists(productCode))
-            throw new ResourceNotFoundException("No medicine found with this id");
+        ProductDto dto = modelMapper.map(entity, ProductDto.class);
+        // Fetch stock from WMS (single source of truth)
+        dto.setTotalStrip(fetchStockFromWms(entity.getProductCode()));
 
-        return Optional.of(modelMapper
-                .map(productRepository
-                        .findById(productCode)
-                        , ProductDto.class
-                ));
-
+        return Optional.of(dto);
     }
 
     public Boolean isProductExists(Long productCode) {
@@ -106,6 +114,37 @@ public class ProductService {
             ProductEntity savedEntity = productRepository.save(entityToUpdate);
             System.out.println("----8----");
             return modelMapper.map(savedEntity, ProductDto.class);
+        }
+    }
+
+    /**
+     * Fetch current stock quantity from WMS for a given product.
+     * WMS is the single source of truth for stock.
+     * If WMS is unreachable, falls back to local database value.
+     *
+     * @param productCode the product code
+     * @return the current stock quantity
+     */
+    private Long fetchStockFromWms(Long productCode) {
+        try {
+            Map response = restClient.get()
+                    .uri("/api/stock/" + productCode)
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                Map data = (Map) response.get("data");
+                if (data != null && data.containsKey("stockQuantity")) {
+                    return ((Number) data.get("stockQuantity")).longValue();
+                }
+            }
+            return 0L;
+        } catch (Exception e) {
+            // If WMS is unreachable, fall back to local DB value
+            System.out.println("Warning: Could not fetch stock from WMS for product " + productCode
+                    + ". Falling back to local DB. Error: " + e.getMessage());
+            ProductEntity product = productRepository.findByProductCode(productCode);
+            return product != null && product.getTotalStrip() != null ? product.getTotalStrip() : 0L;
         }
     }
 }
