@@ -41,6 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (requestTokenHeader == null || !requestTokenHeader.startsWith("Bearer ")) {
                 log.info("No Bearer token found in Authorization header, proceeding with filter chain.");
                 filterChain.doFilter(request, response);
+                System.out.println("After Filter Chain");
                 return;
             }
 

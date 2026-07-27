@@ -36,7 +36,8 @@ public class ProductController {
     }
 
     @PostMapping(path = "/publish/{productCode}")
-    public ResponseEntity<ProductDto> publishProductById(@RequestBody ProductPublishDto productPublishDto, @PathVariable Long productCode){
-        return new ResponseEntity<>(productService.publishProductById(productCode, productPublishDto), HttpStatus.OK);
+    public ResponseEntity<ProductDto> publishProductByProductCode(@RequestBody ProductPublishDto productPublishDto, @PathVariable Long productCode){
+        System.out.println("<-- Entered publish controller");
+        return new ResponseEntity<>(productService.publishProductByProductCode(productCode, productPublishDto), HttpStatus.OK);
     }
 }

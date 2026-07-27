@@ -22,8 +22,8 @@ public class ProductEntity implements Serializable {
     private Long productCode;
     private String name;
     private String composition;
-    private Long mrp;
-    private Long salesRate;
+    private Double mrp;
+    private Double salesRate;
     private Long totalStrip;
     private Long medicinePerStrip;
     private String imageUrl;

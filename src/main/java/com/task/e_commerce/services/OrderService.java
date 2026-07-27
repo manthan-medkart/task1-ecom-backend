@@ -8,6 +8,7 @@ import com.task.e_commerce.entities.enums.OrderStatus;
 import com.task.e_commerce.exceptions.ResourceNotFoundException;
 import com.task.e_commerce.repositories.*;
 import org.modelmapper.ModelMapper;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -47,9 +48,10 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponseDto placeOrder(Long userId, OrderRequestDto orderRequestDto) {
+    public OrderResponseDto placeOrder(Long userId, String email, OrderRequestDto orderRequestDto) {
         //get active cart of the user id passed
         CartEntity cartEntity = cartRepository.findByUserEntityIdAndActive(userId, true);
+        System.out.println("1. Active Cart Found.");
 
         //if found no active cart ---> means no cart Items in cart
         if (cartEntity == null) {
@@ -61,6 +63,7 @@ public class OrderService {
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("Cannot place order: Cart is empty.");
         }
+        System.out.println("2. Cart items found.");
 
         // Check stock availability from WMS for each item before placing order
         for (CartItemEntity cartItem : cartItems) {
@@ -76,12 +79,15 @@ public class OrderService {
             }
         }
 
+        System.out.println("3. All items is available.");
+
         double totalPrice = cartItems.stream()
                 .mapToDouble(cartItem -> cartItem.getProductEntity().getSalesRate() * cartItem.getQuantity())
                 .sum();
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " does not exist."));
+        System.out.println("4. User found successfully.");
 
         OrderEntity orderEntity = OrderEntity.builder()
                 .userEntity(user)
@@ -93,6 +99,7 @@ public class OrderService {
                 .build();
 
         orderRepository.save(orderEntity);
+        System.out.println("5. Order saved.");
 
         //Enter all the items that has been ordered into OrderItems
         List<OrderItemsEntity> savedOrderItems = new ArrayList<>();
@@ -107,17 +114,20 @@ public class OrderService {
 
             orderItemsRepository.save(orderItem);
             savedOrderItems.add(orderItem);
-
+            System.out.println("5.1 orderItem Saved");
             // Deduct stock from WMS (single source of truth) + creates stock log
-            deductStockFromWms(product.getProductCode(), cartItem.getQuantity(),
-                    "Order placed: " + orderEntity.getId());
+            deductStockFromWms(email, product.getProductCode(), cartItem.getQuantity());
+            System.out.println("5.2 stock deducted");
         }
+        System.out.println("6. Cart Items Inserted to Order Items.");
         orderEntity.setOrderItems(savedOrderItems);
 
         //Deactivate the cart
         cartEntity.setActive(false);
         cartEntity.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cartEntity);
+
+        System.out.println("7. Cart deactivated.");
 
         // Prepare WMS payload to create sales order
         Map<String, Object> wmsPayload = Map.of(
@@ -130,13 +140,20 @@ public class OrderService {
             )).toList()
         );
 
+        System.out.println("8. Payload Created");
+        System.out.println(wmsPayload);
+
         try {
             restClient.post()
-                    .uri("/api/sales-order/create")
+                    .uri("/api/sales-orders/create")
                     .body(wmsPayload)
                     .retrieve()
                     .toBodilessEntity();
+
+            System.out.println("9. Successfully api response");
+
         } catch (Exception e) {
+            System.out.println(e.getLocalizedMessage());
             throw new RuntimeException("Failed to register order in WMS: " + e.getMessage(), e);
         }
 
@@ -159,28 +176,18 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus status) {
+        System.out.println("Service : Change Status");
         OrderEntity orderEntity = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order with id: " + orderId + " does not exist."));
         orderEntity.setOrderStatus(status);
-        orderRepository.save(orderEntity);
+        orderEntity = orderRepository.save(orderEntity);
+        System.out.println("status change to : "+orderEntity.getOrderStatus());
         return mapToOrderResponseDto(orderEntity);
+
     }
 
+
     private OrderResponseDto mapToOrderResponseDto(OrderEntity orderEntity) {
-        OrderResponseDto dto = new OrderResponseDto();
-        dto.setId(orderEntity.getId());
-        
-        OrderStatus status = orderEntity.getOrderStatus();
-        if (status == OrderStatus.CHECKING_AVAILABILITY || status == OrderStatus.ACCEPTED) {
-            dto.setOrderStatus(OrderStatus.PENDING);
-        } else {
-            dto.setOrderStatus(status);
-        }
-        
-        dto.setTotalPrice(orderEntity.getTotalPrice());
-        dto.setOrderDate(orderEntity.getOrderDate());
-        dto.setShippingAddress(orderEntity.getShippingAddress());
-        dto.setPaymentMethod(orderEntity.getPaymentMethod());
 
         List<OrderItemResponseDto> items = new ArrayList<>();
         if (orderEntity.getOrderItems() != null) {
@@ -194,7 +201,20 @@ public class OrderService {
                         .build());
             }
         }
-        dto.setItems(items);
+
+        OrderResponseDto dto = OrderResponseDto.builder()
+                .id(orderEntity.getId())
+                .orderStatus(orderEntity.getOrderStatus())
+                .totalPrice(orderEntity.getTotalPrice())
+                .orderDate(orderEntity.getOrderDate())
+                .shippingAddress(orderEntity.getShippingAddress())
+
+                .paymentMethod(orderEntity.getPaymentMethod())
+                .items(items)
+                .build();
+        dto.setId(orderEntity.getId());
+
+        System.out.println("-> Dto converted.");
         return dto;
     }
 
@@ -225,15 +245,16 @@ public class OrderService {
      */
     private int fetchStockFromWms(Long productCode) {
         try {
+            System.out.println("<---Entered Fetching of Stock--->");
             Map response = restClient.get()
-                    .uri("/api/stock/" + productCode)
+                    .uri("/api/stock/product/" + productCode)
                     .retrieve()
                     .body(Map.class);
-
+            System.out.println(response.get("data"));
             if (response != null && response.containsKey("data")) {
                 Map data = (Map) response.get("data");
-                if (data != null && data.containsKey("stockQuantity")) {
-                    return ((Number) data.get("stockQuantity")).intValue();
+                if (data != null && data.containsKey("quantity")) {
+                    return ((Number) data.get("quantity")).intValue();
                 }
             }
             return 0;
@@ -249,25 +270,37 @@ public class OrderService {
      *
      * @param productCode the product code
      * @param quantity the quantity to deduct
-     * @param description reason for deduction
      */
-    private void deductStockFromWms(Long productCode, Long quantity, String description) {
+    private void deductStockFromWms(String email, Long productCode, Long quantity) {
         try {
             Map<String, Object> payload = Map.of(
-                "quantity", quantity,
-                "description", description,
-                "source", "order_placed",
-                "updated_by", "ecommerce"
+                "product_code", productCode,
+                    "quantity", quantity
             );
 
-            restClient.post()
-                    .uri("/api/stock/" + productCode + "/deduct")
+            restClient.patch()
+                    .uri("/api/stock/product/deduct")
+                    .headers(httpHeaders -> {
+                        httpHeaders.add("email", email);
+                        httpHeaders.add("source", "ECOMMERCE");
+                        httpHeaders.add("movement_type", "PURCHASE");
+                    })
                     .body(payload)
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception e) {
+            System.out.println(e.getLocalizedMessage());
             throw new RuntimeException("Failed to deduct stock in WMS for product: " + productCode
                     + ". Error: " + e.getMessage(), e);
         }
+    }
+
+    public Boolean isOrderExists(Long orderId) {
+        try{
+            return orderRepository.existsById(orderId);
+        }catch (Exception exception){
+            throw new RuntimeException("Failed to fetch order existence.    Error : "+exception.getMessage());
+        }
+
     }
 }

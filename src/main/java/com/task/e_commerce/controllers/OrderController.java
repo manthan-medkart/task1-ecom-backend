@@ -27,7 +27,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody @Valid OrderRequestDto orderRequestDto) {
         UserEntity user = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return new ResponseEntity<>(orderService.placeOrder(user.getId(), orderRequestDto), HttpStatus.OK);
+        return new ResponseEntity<>(orderService.placeOrder(user.getId(), user.getEmail(), orderRequestDto), HttpStatus.OK);
     }
 
     @GetMapping
@@ -44,6 +44,12 @@ public class OrderController {
 
     @PostMapping("/update-status/{orderId}")
     public ResponseEntity<OrderResponseDto> updateOrderStatus(@PathVariable Long orderId, @RequestParam OrderStatus status) {
+        System.out.println("<-- Controller : Change Status -->");
         return new ResponseEntity<>(orderService.updateOrderStatus(orderId, status), HttpStatus.OK);
+    }
+
+    @GetMapping("/{orderId}/exists")
+    public ResponseEntity<Boolean> isOrderExists(@PathVariable Long orderId){
+        return new ResponseEntity<>(orderService.isOrderExists(orderId), HttpStatus.OK);
     }
 }

@@ -17,8 +17,8 @@ public class ProductPublishDto {
     private Long productCode;
     private String name;
     private String composition;
-    private Long mrp;
-    private Long sales_rate;
+    private Double mrp;
+    private Double sales_rate;
     private Long total_strip;
     private Long medicine_per_strip;
     private String image_url;

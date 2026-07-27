@@ -8,6 +8,6 @@ public class CartItemsDto {
     private Long id;
     private ProductDto product;
     private Long quantity;
-    private Long price;
+    private Double price;
 
 }

@@ -19,6 +19,7 @@ public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Enumerated(value = EnumType.STRING)
     private OrderStatus orderStatus;
     private Double totalPrice;
     private LocalDateTime orderDate;
@@ -28,7 +29,7 @@ public class OrderEntity {
     @ManyToOne
     private UserEntity userEntity;
 
-    @OneToMany(mappedBy = "orderEntity")
+    @OneToMany(mappedBy = "orderEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemsEntity> orderItems;
 
 

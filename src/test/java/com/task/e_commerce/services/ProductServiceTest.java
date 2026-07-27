@@ -58,7 +58,7 @@ public class ProductServiceTest {
         });
 
         // Act
-        ProductDto result = productService.publishProductById(productCode, productPublishDto);
+        ProductDto result = productService.publishProductByProductCode(productCode, productPublishDto);
 
         // Assert
         assertNotNull(result);
@@ -78,7 +78,7 @@ public class ProductServiceTest {
         when(productRepository.save(any(ProductEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        ProductDto result = productService.publishProductById(productCode, productPublishDto);
+        ProductDto result = productService.publishProductByProductCode(productCode, productPublishDto);
 
         // Assert
         assertNotNull(result);

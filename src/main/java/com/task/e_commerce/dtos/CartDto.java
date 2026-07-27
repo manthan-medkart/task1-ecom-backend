@@ -13,6 +13,6 @@ import java.util.List;
 public class CartDto {
 
     private List<CartItemsDto> items;
-    private Long totalPrice;
+    private Double totalPrice;
 
 }

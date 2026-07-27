@@ -66,7 +66,7 @@ public class ProductService {
         return productRepository.existsByProductCode(productCode);
     }
 
-    public ProductDto publishProductById(Long productCode, ProductPublishDto productPublishDto) {
+    public ProductDto publishProductByProductCode(Long productCode, ProductPublishDto productPublishDto) {
         productPublishDto.setProductCode(productCode);
         if (!isProductExists(productCode)) {
             System.out.println("----0----");
@@ -126,16 +126,19 @@ public class ProductService {
      * @return the current stock quantity
      */
     private Long fetchStockFromWms(Long productCode) {
+        System.out.println("Product Code : "+productCode);
         try {
             Map response = restClient.get()
-                    .uri("/api/stock/" + productCode)
+                    .uri("/api/stock/product/" + productCode)
                     .retrieve()
                     .body(Map.class);
+            System.out.println(response);
 
             if (response != null && response.containsKey("data")) {
                 Map data = (Map) response.get("data");
-                if (data != null && data.containsKey("stockQuantity")) {
-                    return ((Number) data.get("stockQuantity")).longValue();
+                if (data != null && data.containsKey("quantity")) {
+                    System.out.println("Stock Quantity : " + data.get("quantity"));
+                    return ((Number) data.get("quantity")).longValue();
                 }
             }
             return 0L;

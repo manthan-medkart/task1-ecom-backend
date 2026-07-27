@@ -67,9 +67,9 @@ public class CartService {
 
         List<CartItemEntity> cartItems = cartItemRepository.findAllByCartEntityId(cartEntity.getId());
 
-        Long totalPrice = cartItems.stream()
+        Double totalPrice = cartItems.stream()
                 //Add totalPrice of the cart ( includes all items )
-                .mapToLong(cartItem
+                .mapToDouble(cartItem
                         -> cartItem.getPrice() * cartItem.getQuantity()
                 )
                 .sum();
